@@ -22,7 +22,7 @@ LOOP FOREACH currentloop IN $fx'=plugit_loc'
             const locationEl = card.querySelector(\'.chargePointCard__facilityName\');
             const locationName = locationEl ? locationEl.textContent.trim() : \'Unknown\';
 
-            // ⛔ Skip test locations
+            // Skip test locations. Edit/add more if needed.
             if (locationName === \'KINETA HK\' || locationName === \'KINETA HQ\') {
                 continue;
             }
@@ -31,7 +31,7 @@ LOOP FOREACH currentloop IN $fx'=plugit_loc'
             result += locationName + \': \' + statusText + \'\\n\';
         }
     }
- // 🔄 Return empty string if no offline chargers found
+ // Return empty string if no offline chargers found
     return result;
 }
 
