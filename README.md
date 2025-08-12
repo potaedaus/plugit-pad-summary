@@ -3,6 +3,6 @@ Power Automate Desktop Flow summarizing offline chargers from PlugIT CSMS panel 
 
 How to build:
 1. Copy the code in the .txt to clipboard.
-2. Paste into Power Automate Desktop workspace
-3. Input your PlugIT charger page URL into the flow that launches Microsoft Edge
-4. Input your email into the 'Send email...' flow and also edit the number of who the WhatsApp recipient is
+2. Paste into Power Automate Desktop workspace.
+3. Input your PlugIT charger page URL into the 'Add item to list' flow. Add/reduce the flow if you have more/less PlugIT charger page URLs.
+5. Input sender email, receiver email and WhatsApp phone number at the'Set variable' flow.
