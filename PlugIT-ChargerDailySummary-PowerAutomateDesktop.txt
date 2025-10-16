@@ -1,6 +1,7 @@
 SET phonenum TO $fx'https://wa.me/"phonenumberhere"?text='
 SET sender_email TO $fx'sender@mail.com'
 SET receiver_email TO $fx'receiver@mail.com'
+SET ignoredLocations TO $fx'["LOCATION 1", "LOCATION 2", "LOCATION 3"]'
 Variables.CreateNewList List=> plugit_loc
 Variables.CreateNewList List=> resultall
 Variables.AddItemToList Item: $fx'plugitcloud.com/operator/"your-PlugIT-operator-url-here"/charging-locations/list' List: $fx'=plugit_loc'
@@ -14,28 +15,26 @@ LOOP FOREACH currentloop IN $fx'=plugit_loc'
     WebAutomation.ExecuteJavascript BrowserInstance: $fx'=Browser' Javascript: $fx'function ExecuteScript() {
     const statusElements = document.querySelectorAll(\'.cpCardInformation__internetStatus.--red\');
     let result = \'\';
-
+ 
     for (let i = 0; i < statusElements.length; i++) {
         const statusEl = statusElements[i];
         const card = statusEl.closest(\'cs-charge-point-card\');
         if (card) {
             const locationEl = card.querySelector(\'.chargePointCard__facilityName\');
             const locationName = locationEl ? locationEl.textContent.trim() : \'Unknown\';
-
+ 
             // Skip test locations. Edit/add more if needed.
-            if (locationName === \'KINETA HK\' || locationName === \'KINETA HQ\') {
+            if (${ignoredLocations}.includes(locationName)) {
                 continue;
             }
-
+ 
             const statusText = statusEl.textContent.trim();
             result += locationName + \': \' + statusText + \'\\n\';
         }
     }
- // Return empty string if no offline chargers found
+// Return empty string if no offline chargers found
     return result;
-}
-
-' Result=> resultloop
+}' Result=> resultloop
     Variables.AddItemToList Item: $fx'=resultloop' List: $fx'=resultall'
     WebAutomation.CloseWebBrowser BrowserInstance: $fx'=Browser'
 END
@@ -47,6 +46,6 @@ SET Encode TO $fx'=EncodeUrl("🚨 Offline Charger(s) for Today, " & date & ":-"
 Outlook.Launch Instance=> OutlookInstance
 Outlook.SendEmailThroughOutlook.SendEmail Instance: $fx'=OutlookInstance' Account: $fx'=sender_email' SendTo: $fx'=receiver_email' Subject: $fx'PlugIT Charger Down Power Automate Desktop ${CurrentDateTime}' Body: $fx'Hi Everyone, Offline Charger(s) for Today, ${CurrentDateTime}:
 ${FinalMsg}
-
+ 
 Whatsapp Link:
 ${Concatenate(phonenum, Encode)}' IsBodyHtml: False IsDraft: False
