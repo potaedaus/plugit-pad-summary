@@ -5,7 +5,7 @@ Power Automate Desktop Flow summarizing offline chargers from PlugIT CSMS panel 
 
 - KC active sessions URL.
 - PlugIT location URLS.
-- Input sender email, receiver email and WhatsApp phone number.
+- Input sender email, receiver email (both email must be same email) and WhatsApp phone number.
 - Duration of an invalid active session in minutes. Eg, 720 minutes = 12 hours. Only sessions more than 12 hours will be flagged.
 - If there are ignored locations, replace 'LOCATION 1', 'LOCATION 2', etc with the actual location names.
 
