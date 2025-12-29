@@ -1,8 +1,15 @@
 # plugit-pad-summary
-Power Automate Desktop Flow summarizing offline chargers from PlugIT CSMS panel and sends it to email with a pregenerated message-link for WhatsApp. Coded with free version of Power Automate Desktop.
+Power Automate Desktop Flow summarizing offline chargers from PlugIT CSMS panel and invalid active sessions from KC. It then sends it to email with a pregenerated message-link for WhatsApp. Coded with free version of Power Automate Desktop.
 
-How to build:
-1. Copy the code in the .txt to clipboard.
-2. Paste into Power Automate Desktop workspace.
-3. Input your PlugIT charger page URL into the 'Add item to list' flow. Add/reduce the flow if you have more/less PlugIT charger page URLs.
-5. Input sender email, receiver email and WhatsApp phone number at the'Set variable' flow. If there are ignored locations, input it at the 'ignoredLocations' 'Set variable' flow and replace 'LOCATION 1' with the actual location name.
+1. How to build:
+- Copy the code in the .txt file into clipboard.
+- Paste into Power Automate Desktop workspace.
+
+2. Prepping the 'config.json' file
+Download the 'config.json' template and edit with your own details following the same format:
+
+- KC active sessions URL.
+- PlugIT location URLS.
+- Input sender email, receiver email and WhatsApp phone number.
+- Duration of an invalid active session in minutes. Eg, 720 minutes = 12 hours. Only sessions more than 12 hours will be flagged.
+- If there are ignored locations, replace 'LOCATION 1', 'LOCATION 2', etc with the actual location names.
