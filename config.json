@@ -1,0 +1,14 @@
+{
+  "duration_minutes": 720,
+  "phonenum": "https://wa.me/60123456789?text=",
+  "sender_email": "sender@mail.com",
+  "receiver_email": "receiver@mail.com",
+    "kc_urls": [
+    "https://app.kcurl.com/charging-sessions/?ps=100&omni.data.status=ACTIVE,"
+  ],
+  "ignoredLocations": "[\"LOCATION 1\",\"LOCATION 2\",\"LOCATION 3\",\"LOCATION 4\",\"LOCATION 5\"]",
+  "plugit_urls": [
+    "https://plugitcloud.com/operator/642612312312317011af41/charging-locations/list",
+    "https://plugitcloud.com/operator/61826123123cd34c2c6be5/charging-locations/list"
+  ]
+}
