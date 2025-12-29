@@ -1,51 +1,110 @@
-SET phonenum TO $fx'https://wa.me/"phonenumberhere"?text='
-SET sender_email TO $fx'sender@mail.com'
-SET receiver_email TO $fx'receiver@mail.com'
-SET ignoredLocations TO $fx'["LOCATION 1", "LOCATION 2", "LOCATION 3"]'
-Variables.CreateNewList List=> plugit_loc
+File.ReadTextFromFile.ReadText File: $fx'C:\\Users\\YourDirectory\\config.json' Encoding: File.TextFileEncoding.UTF8 Content=> FileContents
+Variables.ConvertJsonToCustomObject Json: $fx'=FileContents' CustomObject=> configObj
 Variables.CreateNewList List=> resultall
-Variables.AddItemToList Item: $fx'plugitcloud.com/operator/"your-PlugIT-operator-url-here"/charging-locations/list' List: $fx'=plugit_loc'
-Variables.AddItemToList Item: $fx'https://plugitcloud.com/operator/"your-PlugIT-operator-url-here"/charging-locations/list' List: $fx'=plugit_loc'
-Variables.AddItemToList Item: $fx'https://plugitcloud.com/operator/"your-PlugIT-operator-url-here"/charging-locations/list' List: $fx'=plugit_loc'
+SET duration_minutes TO $fx'=configObj.duration_minutes'
+SET phonenum TO $fx'=configObj.phonenum'
+SET sender_email TO $fx'=configObj.sender_email'
+SET receiver_email TO $fx'=configObj.receiver_email'
+SET ignoredLocations TO $fx'=configObj.ignoredLocations'
+SET plugit_loc TO $fx'=configObj.plugit_urls'
+SET kc_urls TO $fx'=configObj.kc_urls'
+LOOP FOREACH current_kc IN $fx'=kc_urls'
+    WebAutomation.LaunchEdge.LaunchEdgeCloseDialog Url: $fx'=current_kc' WindowState: WebAutomation.BrowserWindowState.Normal ClearCache: False ClearCookies: False WaitForPageToLoadTimeout: $fx'=60' Timeout: $fx'=60' PiPUserDataFolderMode: WebAutomation.PiPUserDataFolderModeEnum.AutomaticProfile TargetDesktop: $fx'{"DisplayName":"Local computer","Route":{"ServerType":"Local","ServerAddress":""},"DesktopType":"local"}' BrowserInstance=> Browser
+    WAIT (WebAutomation.WaitForWebPageContent.WebPageToContainText BrowserInstance: $fx'=Browser' Text: $fx'Duration') FOR $fx'=10' 
+    ON ERROR REPEAT 2 TIMES WAIT 10
+    END
+    WAIT $fx'=3'
+    WebAutomation.ExecuteJavascript BrowserInstance: $fx'=Browser' Javascript: $fx'function ExecuteScript() {
+  const rows = document.querySelectorAll(\'tbody tr\');
+  const longLocations = [];
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll(\'th, td\');
+    const durationText = cells[6]?.innerText.trim(); // Duration column (index 6)
+    const locationText = cells[4]?.innerText.trim(); // Location column (index 4)
+
+    if (durationText) {
+      const [hh, mm, ss] = durationText.split(\':\').map(Number);
+      const totalSeconds = hh * 3600 + mm * 60 + ss;
+      if (totalSeconds > (${duration_minutes} * 60)) { // Duration in seconds. Pulled from Set variable in minutes.
+        longLocations.push(locationText + \' (\' + durationText + \')\');
+      }
+    }
+  });
+
+  return longLocations.join(\',\');
+}' Result=> activesesh
+    WebAutomation.CloseWebBrowser BrowserInstance: $fx'=Browser'
+END
 LOOP FOREACH currentloop IN $fx'=plugit_loc'
     WebAutomation.LaunchEdge.LaunchEdgeCloseDialog Url: $fx'=currentloop' WindowState: WebAutomation.BrowserWindowState.Normal ClearCache: False ClearCookies: False WaitForPageToLoadTimeout: $fx'=60' Timeout: $fx'=60' PiPUserDataFolderMode: WebAutomation.PiPUserDataFolderModeEnum.AutomaticProfile TargetDesktop: $fx'{"DisplayName":"Local computer","Route":{"ServerType":"Local","ServerAddress":""},"DesktopType":"local"}' BrowserInstance=> Browser
     WAIT (WebAutomation.WaitForWebPageContent.WebPageToContainText BrowserInstance: $fx'=Browser' Text: $fx'PRICING MODEL') FOR $fx'=20' 
     ON ERROR REPEAT 2 TIMES WAIT 10
     END
+    WAIT $fx'=3'
     WebAutomation.ExecuteJavascript BrowserInstance: $fx'=Browser' Javascript: $fx'function ExecuteScript() {
-    const statusElements = document.querySelectorAll(\'.cpCardInformation__internetStatus.--red\');
+
+    // Parse ignored locations (already JSON text from config.json)
+    const ignoredLocations = JSON.parse(\'${ignoredLocations}\')
+        .map(x => x.trim().toLowerCase());
+
+    const statusElements = document.querySelectorAll(
+        \'.cpCardInformation__internetStatus.--red\'
+    );
+
     let result = \'\';
- 
+
     for (let i = 0; i < statusElements.length; i++) {
+
         const statusEl = statusElements[i];
         const card = statusEl.closest(\'cs-charge-point-card\');
-        if (card) {
-            const locationEl = card.querySelector(\'.chargePointCard__facilityName\');
-            const locationName = locationEl ? locationEl.textContent.trim() : \'Unknown\';
- 
-            // Skip test locations. Edit/add more if needed.
-            if (${ignoredLocations}.includes(locationName)) {
-                continue;
-            }
- 
-            const statusText = statusEl.textContent.trim();
-            result += locationName + \': \' + statusText + \'\\n\';
+        if (!card) continue;
+
+        const locationEl = card.querySelector(\'.chargePointCard__facilityName\');
+        if (!locationEl) continue;
+
+        const locationName = locationEl.textContent.trim();
+        const normalizedLocation = locationName.toLowerCase();
+
+        // Ignore locations defined in config.json
+        if (ignoredLocations.includes(normalizedLocation)) {
+            continue;
         }
+
+        const statusText = statusEl.textContent.trim();
+        result += locationName + \': \' + statusText + \'\\n\';
     }
-// Return empty string if no offline chargers found
+
     return result;
-}' Result=> resultloop
+}
+' Result=> resultloop
     Variables.AddItemToList Item: $fx'=resultloop' List: $fx'=resultall'
     WebAutomation.CloseWebBrowser BrowserInstance: $fx'=Browser'
 END
+DateTime.GetCurrentDateTime.Local DateTimeFormat: DateTime.DateTimeFormat.DateAndTime CurrentDateTime=> CurrentDateTime
+Text.ConvertDateTimeToText.FromDateTime DateTime: $fx'=CurrentDateTime' StandardFormat: Text.WellKnownDateTimeFormat.FullDateTimeShortTime Result=> date
 Text.JoinText.Join List: $fx'=resultall' Result=> JoinedText
 SET FinalMsg TO $fx'=If(JoinedText = "",  "None. All chargers online!", JoinedText)'
-DateTime.GetCurrentDateTime.Local DateTimeFormat: DateTime.DateTimeFormat.DateAndTime CurrentDateTime=> CurrentDateTime
-Text.ConvertDateTimeToText.FromCustomDateTime DateTime: $fx'=CurrentDateTime' CustomFormat: $fx'dd-MMM-yyy/hh:mm' Result=> date
+SET KCFinalMsg TO $fx'=If(activesesh = "",  "None. All normal.", activesesh)'
 SET Encode TO $fx'=EncodeUrl("🚨 Offline Charger(s) for Today, " & date & ":-" & Char(10) & Char(10) & FinalMsg)'
-Outlook.Launch Instance=> OutlookInstance
-Outlook.SendEmailThroughOutlook.SendEmail Instance: $fx'=OutlookInstance' Account: $fx'=sender_email' SendTo: $fx'=receiver_email' Subject: $fx'PlugIT Charger Down Power Automate Desktop ${CurrentDateTime}' Body: $fx'Hi Everyone, Offline Charger(s) for Today, ${CurrentDateTime}:
+Display.ShowMessageDialog.ShowMessage Title: $fx'Send Email Summary?' Message: $fx'KC - Active Sessions more than ${duration_minutes/60} hours: ${KCFinalMsg}
+
+PlugIT - Offline Charger(s) for Today, ${date}:
+${FinalMsg}
+ 
+Press Yes to send via email.
+Press No to open the WA link and copy to clipboard.' Icon: Display.Icon.Information Buttons: Display.Buttons.YesNoCancel DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed
+IF $fx'=ButtonPressed = "Yes"' THEN
+    Outlook.Launch Instance=> OutlookInstance
+    Outlook.SendEmailThroughOutlook.SendEmail Instance: $fx'=OutlookInstance' Account: $fx'=sender_email' SendTo: $fx'=receiver_email' Subject: $fx'PlugIT Charger Down Power Automate Desktop ${date}' Body: $fx'KC - Active Sessions more than ${duration_minutes/60} hours: ${KCFinalMsg}
+
+PlugIT - Offline Charger(s) for Today, ${CurrentDateTime}:
 ${FinalMsg}
  
 Whatsapp Link:
 ${Concatenate(phonenum, Encode)}' IsBodyHtml: False IsDraft: False
+    Outlook.Close Instance: $fx'=OutlookInstance'
+ELSE IF $fx'=ButtonPressed = "No"' THEN
+    Clipboard.SetText Text: $fx'${Concatenate(phonenum, Encode)}'
+    WebAutomation.LaunchEdge.LaunchEdgeCloseDialog Url: $fx'${Concatenate(phonenum, Encode)}' WindowState: WebAutomation.BrowserWindowState.Normal ClearCache: False ClearCookies: False WaitForPageToLoadTimeout: $fx'=60' Timeout: $fx'=60' PiPUserDataFolderMode: WebAutomation.PiPUserDataFolderModeEnum.AutomaticProfile TargetDesktop: $fx'{"DisplayName":"Local computer","Route":{"ServerType":"Local","ServerAddress":""},"DesktopType":"local"}' BrowserInstance=> Browser
+END
