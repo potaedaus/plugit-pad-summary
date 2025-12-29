@@ -5,8 +5,7 @@ Power Automate Desktop Flow summarizing offline chargers from PlugIT CSMS panel 
 - Copy the code in the .txt file into clipboard.
 - Paste into Power Automate Desktop workspace.
 
-2. Prepping the 'config.json' file
-Download the 'config.json' template and edit with your own details following the same format:
+2. Prepping the 'config.json' file. Download the 'config.json' template and edit with your own details following the same format:
 
 - KC active sessions URL.
 - PlugIT location URLS.
